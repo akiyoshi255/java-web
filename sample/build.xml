@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="web-spa-sample" default="compile-main" basedir=".">
+    <!-- jar -->
+    <!-- カバレージ(emma, cobertura) -->
+    <!-- 静的チェック(checkstyle, findbugs) -->
+
+    <!-- プロジェクトプロパティを読み込む -->
+    <property file="./build.properties"/>
+
+	<!-- プロジェクトに必要なディレクトリを作成する。 -->
+    <target name="make-project">
+        <!-- Javaプログラム開発用ディレクトリ -->
+        <mkdir dir="${src.main.java.dir}"/>
+    	<mkdir dir="${src.test.java.dir}"/>
+        <mkdir dir="${lib.compile.dir}"/>
+        <mkdir dir="${lib.provided.dir}"/>
+        <mkdir dir="${lib.test.dir}"/>
+        <!-- Webアプリケーション開発用ディレクトリ -->
+        <mkdir dir="${src.main.webapp.dir}"/>
+        <mkdir dir="${src.test.webapp.dir}"/>
+    </target>
+
+	<!-- プロジェクトに必要なディレクトリを削除する。 -->
+    <target name="delete-project">
+        <delete verbose="${verbose}">
+            <dirset dir="${basedir}">
+                <include name="**/*"/>
+            </dirset>
+        </delete>
+    </target>
+
+    <!-- メインプログラムのコンパイルと実行に必要なライブラリのファイルセット定義 -->
+    <path id="lib.compile">
+        <fileset dir="${lib.compile.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- メインプログラムのコンパイルと実行に必要だが、WARには含めないライブラリのファイルセット定義 -->
+    <path id="lib.provided">
+        <fileset dir="${lib.provided.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- テストプログラムのコンパイルと実行に必要なライブラリのファイルセット定義 -->
+    <path id="lib.test">
+        <fileset dir="${lib.test.dir}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- メインプログラムコンパイル時のクラスパス -->
+    <path id="compile.main.classpath">
+        <path refid="lib.compile"/>
+        <path refid="lib.provided"/>
+    </path>
+ 
+    <!-- テストプログラムコンパイル時のクラスパス -->
+    <path id="compile.test.classpath">
+        <pathelement path="${target.main.classes.dir}"/>
+        <path refid="lib.compile"/>
+        <path refid="lib.provided"/>
+        <path refid="lib.test"/>
+    </path>
+
+    <!-- テストプログラムコンパイル時のクラスパス -->
+    <path id="run.test.classpath">
+        <pathelement path="${target.main.classes.dir}"/>
+        <pathelement path="${target.test.classes.dir}"/>
+        <path refid="lib.compile"/>
+        <path refid="lib.provided"/>
+        <path refid="lib.test"/>
+    </path>
+
+    <!-- メインプログラムのコンパイル -->
+    <target name="compile-main">
+        <mkdir dir="${target.main.classes.dir}"/>
+        <javac compiler = "${javac.compiler}"
+               source   = "${javac.source}"
+               target   = "${javac.target}"
+               encoding = "${encoding}"
+               debug    = "${javac.debug}"
+               verbose  = "${verbose}"
+               srcdir   = "${src.main.java.dir}"
+               includes = "${src.main.java.includes}"
+               excludes = "${src.main.java.excludes}"
+               destdir  = "${target.main.classes.dir}"
+               classpathref="compile.main.classpath"
+               includeAntRuntime="no"/>
+    </target>
+
+    <!-- メインプログラムのJavaDocの作成 -->
+    <target name="javadoc-main" depends="compile-main">
+        <delete dir="${target.main.javadoc.dir}" />
+        <mkdir  dir="${target.main.javadoc.dir}" />
+        <javadoc destdir="${target.main.javadoc.dir}" encoding="${encoding}">
+            <fileset dir      = "${src.main.java.dir}" 
+                     includes = "${src.main.java.includes}"
+                     excludes = "${src.main.java.excludes}"/>
+            <classpath refid="compile.main.classpath"/>
+        </javadoc>
+    </target>
+
+    <!-- テストプログラムのコンパイル -->
+    <target name="compile-test" depends="compile-main">
+        <mkdir dir="${target.test.classes.dir}"/>
+        <javac compiler = "${javac.compiler}"
+               source   = "${javac.source}"
+               target   = "${javac.target}"
+               encoding = "${encoding}"
+               debug    = "on"
+               verbose  = "${verbose}"
+               srcdir   = "${src.test.java.dir}"
+               includes = "${src.test.java.includes}"
+               excludes = "${src.test.java.excludes}"
+               destdir  = "${target.test.classes.dir}"
+               classpathref="compile.test.classpath"
+               includeAntRuntime="no"/>
+    </target>
+
+    <!-- テストプログラムのJavaDocの作成 -->
+    <target name="javadoc-test" depends="compile-test">
+        <delete dir="${target.test.javadoc.dir}" />
+        <mkdir  dir="${target.test.javadoc.dir}" />
+        <javadoc destdir="${target.test.javadoc.dir}" encoding="${encoding}">
+            <fileset dir      = "${src.test.java.dir}"
+                     includes = "${src.test.java.includes}"
+                     excludes = "${src.test.java.excludes}"/>
+            <classpath refid="compile.test.classpath"/>
+        </javadoc>
+    </target>
+
+    <!-- テストプログラムの実行 -->
+    <target name="run-test" depends="compile-test">
+        <delete dir="${target.test.run.dir}" />
+        <mkdir  dir="${target.test.run.dir}" />
+        <delete dir="${target.test.results.dir}" />
+        <mkdir  dir="${target.test.results.dir}" />
+        <delete dir="${target.test.coverage.data.dir}" />
+        <mkdir  dir="${target.test.coverage.data.dir}" />
+
+        <junit fork="off" dir="${target.test.run.dir}" printsummary="yes">
+            <classpath refid="run.test.classpath"/>
+            <formatter type="xml"/>
+            <batchtest todir="${target.test.results.dir}">
+                <fileset dir="${target.test.classes.dir}">
+                    <include name="**/*Test.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <!-- テスト結果のレポート作成(HTML形式) -->
+    <target name="report-test-results" depends="run-test">
+        <delete dir="${target.test.results.report.dir}" />
+        <mkdir  dir="${target.test.results.report.dir}" />
+        <junitreport todir="${target.test.results.report.dir}">
+            <report format="frames" todir="${target.test.results.report.dir}/html" />
+            <fileset dir="${target.test.results.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+        </junitreport>
+    </target>
+
+    <!-- WARファイルの作成 -->
+	<target name="pack-war" depends="compile-main">
+        <war destfile = "${target.main.war.file}"
+             webxml   = "${src.main.webapp.dir}/WEB-INF/web.xml"
+             encoding = "${encoding}"
+             update   = "false">
+            <fileset dir="${src.main.webapp.dir}" excludes="WEB-INF/web.xml,WEB-INF/lib/**,WEB-INF/classes/**"/>
+            <classes dir="${target.main.classes.dir}"/>
+            <lib dir="${lib.compile.dir}" includes="*.jar"/>
+        </war>
+    </target>
+
+    <!-- WARファイルの解凍(作成されたWARファイルの中身を確認した場合に使用する) -->
+	<target name="unpack-war" depends="pack-war">
+        <unwar src       = "${target.main.war.file}"
+               dest      = "${target.main.war.unpack.dir}/"
+               overwrite = "true"/> 
+    </target>
+
+    <!-- リリースビルド -->
+    <target name="build" depends="pack-war, unpack-war, report-test-results, javadoc-main, javadoc-test"/>
+
+    <!-- Tomcatのカスタムタスクの定義 -->
+    <path id="tomcat.lib.classpath">
+        <fileset dir="${tomcat.home.dir}/bin"> 
+            <include name="*.jar"/>
+        </fileset>
+        <fileset dir="${tomcat.home.dir}/lib"> 
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+    <taskdef resource="org/apache/catalina/ant/catalina.tasks"
+             classpathref="tomcat.lib.classpath"/>
+
+    <!-- Tomcatが稼働しているVMの情報を表示する -->
+    <target name="tomcat-vminfo">
+        <vminfo
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"/>
+    </target>
+
+    <!-- Tomcat上で発生したメモリリークを表示する -->
+    <target name="tomcat-findleaks">
+        <findleaks
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"/>
+    </target>
+
+    <!-- Tomcat上のスレッド一覧を表示する -->
+    <target name="tomcat-threaddump">
+        <threaddump
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"/>
+    </target>
+
+    <!-- Tomcat上のJNDIリソース一覧を表示する -->
+    <target name="tomcat-resources">
+        <resources
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"/>
+    </target>
+
+    <!-- Tomcat上のセッション一覧を表示する -->
+    <target name="tomcat-sessions">
+        <sessions
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"
+            path     = "${target.main.war.context_path}"/>
+    </target>
+
+    <!-- Tomcat上のWebアプリケーション一覧を表示する -->
+    <target name="tomcat-list-webapp">
+        <list
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"/>
+    </target>
+
+    <!-- TomcatにWebアプリケーションをデプロイする -->
+    <target name="tomcat-deploy-webapp" depends="pack-war">
+        <deploy
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"
+            path     = "${target.main.war.context_path}"
+            war      = "${target.main.war.file}"/>
+    </target>
+
+    <!-- TomcatからWebアプリケーションをアンデプロイする -->
+    <target name="tomcat-undeploy-webapp">
+        <undeploy
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"
+            path     = "${target.main.war.context_path}"/>
+    </target>
+
+    <!-- Tomcat上のWebアプリケーションを起動する -->
+    <target name="tomcat-start-webapp">
+        <start
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"
+            path     = "${target.main.war.context_path}"/>
+    </target>
+
+    <!-- Tomcat上のWebアプリケーションを停止する -->
+    <target name="tomcat-stop-webapp">
+        <stop
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"
+            path     = "${target.main.war.context_path}"/>
+    </target>
+
+    <!-- Tomcat上のWebアプリケーションをリロードする -->
+    <target name="tomcat-reload-webapp">
+        <reload
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"
+            path     = "${target.main.war.context_path}"/>
+    </target>
+
+    <!-- Web.xmlを検証する -->
+    <target name="tomcat-validator">
+        <validator path="${src.main.webapp.dir}"/>
+    </target>
+
+    <property name="tomcat.webapp.dir"  value="${tomcat.webapps.dir}/${target.main.war.context_path}"/>
+
+    <!-- ローカルマシンのTomcat上に配備したWebアプリケーションのクラスを更新する -->
+    <target name="sync-webapp-classes" depends="compile-main">
+        <sync
+            todir       = "${tomcat.webapp.dir}/WEB-INF/classes"
+            overwrite   = "false"
+            failonerror = "true"
+            verbose     = "${verbose}">
+            <fileset dir="${target.main.classes.dir}"/>
+        </sync>
+    </target>
+
+    <!-- ローカルマシンのTomcat上に配備したWebアプリケーションのライブラリを更新する -->
+    <target name="sync-webapp-lib">
+        <sync
+            todir       = "${tomcat.webapp.dir}/WEB-INF/lib"
+            overwrite   = "false"
+            failonerror = "true"
+            verbose     = "${verbose}">
+            <fileset dir="${lib.compile.dir}" includes="*.jar"/>
+        </sync>
+    </target>
+
+    <!-- ローカルマシンのTomcat上に配備したWebアプリケーションの静的コンテンツを更新する -->
+    <target name="sync-webapp-contents">
+        <sync
+            todir       = "${tomcat.webapp.dir}WEB-INF/lib"
+            overwrite   = "false"
+            failonerror = "true"
+            verbose     = "${verbose}">
+            <fileset dir="${src.main.webapp.dir}" excludes="WEB-INF/lib/**,WEB-INF/classes/**"/>
+        </sync>
+    </target>
+
+    <!-- ローカルマシンのTomcat上に配備したWebアプリケーションの内容を全て更新する -->
+    <target name="sync-webapp" depends="sync-webapp-classes,sync-webapp-lib,sync-webapp-contents"/>
+
+    <!-- ビルド時に生成したファイルを全て削除する。 -->
+    <target name="clean">
+        <delete dir ="${target.dir}" includeEmptyDirs="true" verbose="${verbose}"/>
+    </target>
+</project>

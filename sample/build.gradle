@@ -1,0 +1,60 @@
+// 依存ライブラリを取得するためのGradleビルドファイル
+apply plugin: 'java'
+apply plugin: 'war'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.glassfish.jersey.containers:jersey-container-servlet:2.22.1'
+    compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.22.1'
+
+    providedCompile 'javax.servlet:javax.servlet-api:3.0.1'
+
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.glassfish.jersey.core:jersey-client:2.22.1'
+}
+
+task copyDependencies
+
+task copyCompileDependencies(type:Copy) {
+    from configurations.compile - configurations.providedCompile
+    into 'lib/compile'
+}
+copyDependencies.dependsOn copyCompileDependencies
+
+task copyRuntimeDependencies(type:Copy) {
+    from configurations.runtime - (configurations.compile + configurations.providedRuntime)
+    into 'lib/runtime'
+}
+copyDependencies.dependsOn copyRuntimeDependencies
+
+task copyProvidedCompileDependencies(type:Copy) {
+    from configurations.providedCompile
+    into 'lib/provided'
+}
+copyDependencies.dependsOn copyProvidedCompileDependencies
+
+task copyProvidedRuntimeDependencies(type:Copy) {
+    from configurations.providedRuntime - configurations.providedCompile
+    into 'lib/providedRuntime'
+}
+copyDependencies.dependsOn copyProvidedRuntimeDependencies
+
+task copyTestCompileDependencies(type:Copy) {
+    from configurations.testCompile - configurations.compile
+    into 'lib/test'
+}
+copyDependencies.dependsOn copyTestCompileDependencies
+
+task copyTestRuntimeDependencies(type:Copy) {
+    from configurations.testRuntime - configurations.testCompile
+    into 'lib/testRuntime'
+}
+copyDependencies.dependsOn copyTestRuntimeDependencies
+
+task deleteDependencies(type: Delete) {
+    delete 'lib'
+}
+
