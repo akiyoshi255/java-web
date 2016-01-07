@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project name="web-spa-sample" default="compile-main" basedir=".">
-    <!-- jar -->
     <!-- カバレージ(emma, cobertura) -->
     <!-- 静的チェック(checkstyle, findbugs) -->
 
@@ -76,6 +75,12 @@
     <!-- メインプログラムのコンパイル -->
     <target name="compile-main">
         <mkdir dir="${target.main.classes.dir}"/>
+        <copy todir="${target.main.classes.dir}">
+            <fileset dir="${src.main.java.dir}">
+                <include name="**/*"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
         <javac compiler = "${javac.compiler}"
                source   = "${javac.source}"
                target   = "${javac.target}"
@@ -105,6 +110,12 @@
     <!-- テストプログラムのコンパイル -->
     <target name="compile-test" depends="compile-main">
         <mkdir dir="${target.test.classes.dir}"/>
+        <copy todir="${target.test.classes.dir}">
+            <fileset dir="${src.test.java.dir}">
+                <include name="**/*"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
         <javac compiler = "${javac.compiler}"
                source   = "${javac.source}"
                target   = "${javac.target}"
@@ -161,6 +172,22 @@
                 <include name="TEST-*.xml"/>
             </fileset>
         </junitreport>
+    </target>
+
+    <!-- JARファイルの作成 -->
+	<target name="pack-jar" depends="compile-main">
+        <jar destfile = "${target.main.jar.file}"
+             basedir  = "${target.main.classes.dir}"
+             manifest = "${target.main.classes.dir}/META-INF/MANIFEST.MF"
+             encoding = "${encoding}"
+             update   = "false" />
+    </target>
+
+    <!-- JARファイルの解凍(作成されたJARファイルの中身を確認した場合に使用する) -->
+	<target name="unpack-jar" depends="pack-jar">
+        <unjar src       = "${target.main.jar.file}"
+               dest      = "${target.main.jar.unpack.dir}/"
+               overwrite = "true"/> 
     </target>
 
     <!-- WARファイルの作成 -->
