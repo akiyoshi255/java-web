@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <project name="web-spa-sample" default="compile-main" basedir=".">
-    <!-- カバレージ(emma, cobertura) -->
-    <!-- 静的チェック(checkstyle, findbugs) -->
-
     <!-- プロジェクトプロパティを読み込む -->
     <property file="./build.properties"/>
+
+    <!-- カバレージツール(cobertura)の設定 -->
+    <property name="tools.dir" value="tools"/>
+    <property name="cobertura.home" value="${tools.dir}/cobertura-2.1.1"/>
+    <path id="cobertura.classpath">
+        <fileset dir="${cobertura.home}">
+            <include name="cobertura-2.1.1.jar"/>
+            <include name="lib/**/*.jar"/>
+        </fileset>
+    </path>
+    <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
+
+    <!-- 静的チェック(checkstyle, findbugs) -->
 
 	<!-- プロジェクトに必要なディレクトリを作成する。 -->
     <target name="make-project">
@@ -65,11 +75,13 @@
 
     <!-- テストプログラムコンパイル時のクラスパス -->
     <path id="run.test.classpath">
+        <pathelement path="${target.main.classes.instrument.dir}"/>
         <pathelement path="${target.main.classes.dir}"/>
         <pathelement path="${target.test.classes.dir}"/>
         <path refid="lib.compile"/>
         <path refid="lib.provided"/>
         <path refid="lib.test"/>
+        <path refid="cobertura.classpath"/>
     </path>
 
     <!-- メインプログラムのコンパイル -->
@@ -142,16 +154,29 @@
         </javadoc>
     </target>
 
+    <!-- クラスファイルへのカバレージ取得コードの埋め込み -->
+    <target name="instrument-main" depends="compile-main">
+        <mkdir  dir="${target.test.coverage.data.dir}" />
+        <delete dir="${target.test.coverage.data.dir}/cobertura.ser" />
+        <delete dir="${target.main.classes.instrument.dir}"/>
+        <cobertura-instrument
+            datafile = "${target.test.coverage.data.dir}/cobertura.ser"
+            todir    = "${target.main.classes.instrument.dir}">
+            <fileset dir="${target.main.classes.dir}">
+                <include name="**/*.class"/>
+            </fileset>
+        </cobertura-instrument>
+    </target>
+
     <!-- テストプログラムの実行 -->
-    <target name="run-test" depends="compile-test">
+    <target name="run-test" depends="compile-test, instrument-main">
         <delete dir="${target.test.run.dir}" />
         <mkdir  dir="${target.test.run.dir}" />
         <delete dir="${target.test.results.dir}" />
         <mkdir  dir="${target.test.results.dir}" />
-        <delete dir="${target.test.coverage.data.dir}" />
-        <mkdir  dir="${target.test.coverage.data.dir}" />
 
-        <junit fork="off" dir="${target.test.run.dir}" printsummary="yes">
+        <junit fork="yes" dir="${target.test.run.dir}" printsummary="yes">
+            <sysproperty key="net.sourceforge.cobertura.datafile" file="${basedir}/${target.test.coverage.data.dir}/cobertura.ser"/>
             <classpath refid="run.test.classpath"/>
             <formatter type="xml"/>
             <batchtest todir="${target.test.results.dir}">
@@ -172,6 +197,20 @@
                 <include name="TEST-*.xml"/>
             </fileset>
         </junitreport>
+    </target>
+
+    <!-- カバレージ結果のレポート作成 -->
+    <target name="report-test-coverage" depends="run-test">
+        <cobertura-report
+            format   = "html" 
+            datafile = "${target.test.coverage.data.dir}/cobertura.ser"
+            destdir  = "${target.test.coverage.report.dir}"
+            encoding = "utf-8">
+            <fileset dir="${src.main.java.dir}">
+                <include name = "${src.main.java.includes}"/>
+                <exclude name = "${src.main.java.excludes}"/>
+            </fileset>
+        </cobertura-report>
     </target>
 
     <!-- JARファイルの作成 -->
@@ -210,7 +249,7 @@
     </target>
 
     <!-- リリースビルド -->
-    <target name="build" depends="pack-war, unpack-war, report-test-results, javadoc-main, javadoc-test"/>
+    <target name="build" depends="pack-war,unpack-war, report-test-results, report-test-coverage, javadoc-main, javadoc-test"/>
 
     <!-- Tomcatのカスタムタスクの定義 -->
     <path id="tomcat.lib.classpath">
