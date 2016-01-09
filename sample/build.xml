@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<project name="web-spa-sample" default="compile-main" basedir=".">
+<project name="web-spa-sample" default="build" basedir=".">
     <!-- プロジェクトプロパティを読み込む -->
     <property file="./build.properties"/>
 
-    <!-- カバレージツール(cobertura)の設定 -->
+    <!-- カバレージツール(cobertura)のタスクの設定 -->
     <property name="tools.dir" value="tools"/>
     <property name="cobertura.home" value="${tools.dir}/cobertura-2.1.1"/>
     <path id="cobertura.classpath">
@@ -14,7 +14,16 @@
     </path>
     <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
 
-    <!-- 静的チェック(checkstyle, findbugs) -->
+    <!-- 静的チェック(checkstyle)のタスクの設定 -->
+    <property name="checkstyle.home" value="${tools.dir}/checkstyle-6.14.1-all"/>
+    <taskdef resource  ="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
+             classpath ="${checkstyle.home}"/> 
+
+    <!-- 静的チェック(findbugs)のタスクの設定 -->
+    <property name="findbugs.home" value="${tools.dir}/findbugs-3.0.1" />
+    <taskdef name      = "findbugs"
+             classname = "edu.umd.cs.findbugs.anttask.FindBugsTask"
+             classpath = "${findbugs.home}/lib/findbugs-ant.jar"/>
 
 	<!-- プロジェクトに必要なディレクトリを作成する。 -->
     <target name="make-project">
@@ -29,7 +38,8 @@
         <mkdir dir="${src.test.webapp.dir}"/>
     </target>
 
-	<!-- プロジェクトに必要なディレクトリを削除する。 -->
+    <!-- プロジェクトに必要なディレクトリを削除する。 -->
+    <!--
     <target name="delete-project">
         <delete verbose="${verbose}">
             <dirset dir="${basedir}">
@@ -37,6 +47,7 @@
             </dirset>
         </delete>
     </target>
+    -->
 
     <!-- メインプログラムのコンパイルと実行に必要なライブラリのファイルセット定義 -->
     <path id="lib.compile">
@@ -213,6 +224,36 @@
         </cobertura-report>
     </target>
 
+    <!-- 静的チェック(checkstyle)の実行 -->
+    <target name="inspect-checkstyle">
+        <delete dir="${target.inspection.checkstyle.report.dir}"/>
+        <mkdir  dir="${target.inspection.checkstyle.report.dir}"/>
+
+        <checkstyle config="${checkstyle.home}/sun_checks.xml" failOnViolation="no">
+            <fileset dir="${src.main.java.dir}">
+                <include name = "${src.main.java.includes}"/>
+                <exclude name = "${src.main.java.excludes}"/>
+            </fileset>
+            <formatter type="plain" toFile="${target.inspection.checkstyle.report.dir}/checkstyle-result.txt"/>
+        </checkstyle>
+    </target>
+
+    <!-- 静的チェック(findbugs)の実行 -->
+    <target name="inspect-findbugs">
+        <delete dir="${target.inspection.findbugs.report.dir}"/>
+        <mkdir  dir="${target.inspection.findbugs.report.dir}"/>
+
+        <findbugs home       = "${findbugs.home}"
+                  output     = "html"
+                  outputFile = "${target.inspection.findbugs.report.dir}/findbugs-result.html">
+            <sourcePath path="${src.main.java.dir}" />
+            <class location="${target.main.classes.dir}" />
+        </findbugs>
+    </target>
+
+    <!-- 静的チェックの実行 -->
+    <target name="inspect" depends="inspect-checkstyle, inspect-findbugs"/>
+
     <!-- JARファイルの作成 -->
 	<target name="pack-jar" depends="compile-main">
         <jar destfile = "${target.main.jar.file}"
@@ -248,8 +289,8 @@
                overwrite = "true"/> 
     </target>
 
-    <!-- リリースビルド -->
-    <target name="build" depends="pack-war,unpack-war, report-test-results, report-test-coverage, javadoc-main, javadoc-test"/>
+    <!-- リリースビルド(war) -->
+    <target name="build" depends="pack-war, unpack-war, report-test-results, report-test-coverage, javadoc-main, javadoc-test"/>
 
     <!-- Tomcatのカスタムタスクの定義 -->
     <path id="tomcat.lib.classpath">
@@ -295,15 +336,6 @@
             password = "${tomcat.manager.password}"/>
     </target>
 
-    <!-- Tomcat上のセッション一覧を表示する -->
-    <target name="tomcat-sessions">
-        <sessions
-            url      = "${tomcat.manager.url}"
-            username = "${tomcat.manager.username}"
-            password = "${tomcat.manager.password}"
-            path     = "${target.main.war.context_path}"/>
-    </target>
-
     <!-- Tomcat上のWebアプリケーション一覧を表示する -->
     <target name="tomcat-list-webapp">
         <list
@@ -312,13 +344,16 @@
             password = "${tomcat.manager.password}"/>
     </target>
 
+    <!-- Tomcat上の状態を全て表示する -->
+    <target name="tomcat-info" depends="tomcat-vminfo, tomcat-findleaks, tomcat-threaddump, tomcat-resources, tomcat-list-webapp"/>
+
     <!-- TomcatにWebアプリケーションをデプロイする -->
     <target name="tomcat-deploy-webapp" depends="pack-war">
         <deploy
             url      = "${tomcat.manager.url}"
             username = "${tomcat.manager.username}"
             password = "${tomcat.manager.password}"
-            path     = "${target.main.war.context_path}"
+            path     = "${webapp.context_path}"
             war      = "${target.main.war.file}"/>
     </target>
 
@@ -328,7 +363,7 @@
             url      = "${tomcat.manager.url}"
             username = "${tomcat.manager.username}"
             password = "${tomcat.manager.password}"
-            path     = "${target.main.war.context_path}"/>
+            path     = "${webapp.context_path}"/>
     </target>
 
     <!-- Tomcat上のWebアプリケーションを起動する -->
@@ -337,7 +372,7 @@
             url      = "${tomcat.manager.url}"
             username = "${tomcat.manager.username}"
             password = "${tomcat.manager.password}"
-            path     = "${target.main.war.context_path}"/>
+            path     = "${webapp.context_path}"/>
     </target>
 
     <!-- Tomcat上のWebアプリケーションを停止する -->
@@ -346,7 +381,7 @@
             url      = "${tomcat.manager.url}"
             username = "${tomcat.manager.username}"
             password = "${tomcat.manager.password}"
-            path     = "${target.main.war.context_path}"/>
+            path     = "${webapp.context_path}"/>
     </target>
 
     <!-- Tomcat上のWebアプリケーションをリロードする -->
@@ -355,7 +390,16 @@
             url      = "${tomcat.manager.url}"
             username = "${tomcat.manager.username}"
             password = "${tomcat.manager.password}"
-            path     = "${target.main.war.context_path}"/>
+            path     = "${webapp.context_path}"/>
+    </target>
+
+    <!-- Tomcat上のWebアプリケーションのセッション一覧を表示する -->
+    <target name="tomcat-sessions">
+        <sessions
+            url      = "${tomcat.manager.url}"
+            username = "${tomcat.manager.username}"
+            password = "${tomcat.manager.password}"
+            path     = "${webapp.context_path}"/>
     </target>
 
     <!-- Web.xmlを検証する -->
@@ -363,7 +407,7 @@
         <validator path="${src.main.webapp.dir}"/>
     </target>
 
-    <property name="tomcat.webapp.dir"  value="${tomcat.webapps.dir}/${target.main.war.context_path}"/>
+    <property name="tomcat.webapp.dir"  value="${tomcat.webapps.dir}/${webapp.context_path}"/>
 
     <!-- ローカルマシンのTomcat上に配備したWebアプリケーションのクラスを更新する -->
     <target name="sync-webapp-classes" depends="compile-main">
