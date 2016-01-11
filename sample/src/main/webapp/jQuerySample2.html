@@ -1,0 +1,124 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>jQueryサンプル</title>
+<link rel="stylesheet" href="js/jquery-ui-1.11.4/jquery-ui.css" />
+<script type="text/javascript" src="js/jquery/jquery-1.12.0.js"></script>
+<script type="text/javascript" src="js/jquery-ui-1.11.4/jquery-ui.js"></script>
+<!-- <script type="text/javascript" src="js/jQuerySample2.js"></script> -->
+<script>
+	jQuery(function($) {
+		// 画面表示時にダイアログが表示されないよう設定
+		$("#hogehoge").dialog({
+			autoOpen : false,
+			width : 400, // 横幅のサイズを設定
+			modal : true, // モーダルダイアログにする
+			buttons : [ // ボタン名 : 処理 を設定
+			{
+				text : 'OK',
+				click : function() {
+					alert("ボタン1をクリックしました");
+				}
+			}, {
+				text : 'キャンセル',
+				click : function() {
+					alert("ボタン2をクリックしました");
+				}
+			} ]
+		});
+		$("#saveCondition").click(function() {
+			console.log("AAA");
+			// ダイアログを表示する
+			$("#hogehoge").dialog("open");
+		});
+		/*
+		dialog = $( "#dialog-form" ).dialog({
+		    autoOpen: false,
+		    height: 300,
+		    width: 350,
+		    modal: true,
+		    buttons: {
+		      "Create an account": addUser,
+		      Cancel: function() {
+		        dialog.dialog( "close" );
+		      }
+		    },
+		    close: function() {
+		      form[ 0 ].reset();
+		      allFields.removeClass( "ui-state-error" );
+		    }
+		    buttons: {
+		    	cancel: function() {
+		            dialog.dialog( "close" );
+		        }
+		     },
+		     close: function() {
+		    	 event.preventDefault();
+		        $( this ).dialog( "close" );
+		     }
+		  });
+		$( "#saveCondition" ).button().on( "click", function() {
+		    dialog.dialog( "open" );
+		  });
+		 */
+
+	});
+</script>
+</head>
+<body>
+    <h3>セグメント付与条件設定履歴</h3>
+
+    <div>
+        <form>
+            <div>
+                <table border="1">
+                    <tr>
+                        <th></th>
+                        <th>保存日時</th>
+                        <th>コメント</th>
+                        <th colspan="2">操作</th>
+                    </tr>
+                    <tr>
+                        <td><input type="radio" name="target"></input></td>
+                        <td>2015/12/16 16:00:00</td>
+                        <td>変更前</td>
+                        <td><input type="button" value="コメント編集"></input></td>
+                        <td><input type="button" value="条件削除"></input></td>
+                    </tr>
+                    <tr>
+                        <td><input type="radio" name="target"></input></td>
+                        <td>2015/12/16 08:00:00</td>
+                        <td>変更後</td>
+                        <td><input type="button" value="コメント編集"></input></td>
+                        <td><input type="button" value="条件削除"></input></td>
+                    </tr>
+                    <tr>
+                        <td><input type="radio" name="target"></input></td>
+                        <td>2015/12/15 17:50:30</td>
+                        <td>長いコメント、長いコメント、長いコメント</td>
+                        <td><input type="button" value="コメント編集"></input></td>
+                        <td><input type="button" value="条件削除"></input></td>
+                    </tr>
+                </table>
+            </div>
+            <div>
+                <p>
+                    <input type="submit" value="復帰"></input>
+                    <!-- -->
+                    <input type="button" id="saveCondition" value="新規"></input>
+                </p>
+            </div>
+        </form>
+    </div>
+    <div id="hogehoge" title="コメント編集">
+        <form>
+            <label>保存日時:</label> 2015/12/17 15:45:00
+            <br />
+            <label>コメント:</label>
+            <br />
+            <textarea maxLength="128"> </textarea>
+        </form>
+    </div>
+</body>
+</html>

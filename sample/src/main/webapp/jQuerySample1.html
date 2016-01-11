@@ -1,0 +1,89 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>jQueryサンプル</title>
+<script type="text/javascript" src="js/jquery/jquery-1.12.0.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript" src="js/jQuerySample1.js"></script>
+</head>
+<body>
+    <h3>条件</h3>
+    <div>
+        <form method="post" action="jQuerySample.html">
+            <ol id="paramList">
+                <li>ロジック
+                    <div>
+                        <p>
+                            <select id="logicSelectBox" size="1">
+                                <option value="logic1">1. ロジック1</option>
+                                <option value="logic2">2. ロジック2</option>
+                            </select>
+                        </p>
+                    </div>
+                </li>
+                <li>最大数（指定可能値：1〜100）
+                    <div>
+                        <p>
+                            <input type="text" id="maxSegmentNum" value="100" />個 <br />
+                            <!-- エラーメッセージ表示箇所 -->
+                            <span id="maxSegmentNumErrorMessage"></span>
+                        </p>
+                    </div>
+                </li>
+                <li>対象期間（日単位）
+                    <div>
+                        <p>
+                            <!-- 開始日付 -->
+                            <input type="text" id="startDate" value="2000/01/01" /> から
+                            <!-- 終了日付 -->
+                            <input type="text" id="endDate" value="2099/12/31" />まで<br />
+                            <!-- エラーメッセージ表示箇所 -->
+                            <span id="targetPeriodErrorMessage"></span>
+                        </p>
+                    </div>
+                </li>
+                <li>最低数（指定可能値：1〜1000）
+                    <div>
+                        <p>
+                            <input type="text" id="minItemTypeNum" value="5" />商品<br />
+                            <!-- エラーメッセージ表示箇所 -->
+                            <span id="minItemTypeNumErrorMessage"></span>
+                        </p>
+                    </div>
+                </li>
+                <li class="logic1Param">判定閾値（指定可能値：1〜500）
+                    <div>
+                        <p>
+                            <input type="text" id="logic1Threshold" value="200" />%<br />
+                            <!-- エラーメッセージ表示箇所 -->
+                            <span id="logic1ThresholdErrorMessage"></span>
+                        </p>
+                    </div>
+                </li>
+                <li class="logic1Param">最低点数（指定可能値：1〜1000）
+                    <div>
+                        <p>
+                            <input type="text" id="minItemNum" value="1" />個<br />
+                            <!-- エラーメッセージ表示箇所 -->
+                            <span id="minItemNumErrorMessage"></span>
+                        </p>
+                    </div>
+                </li>
+                <li class="logic2Param">判定閾値（指定可能値：1〜1000）
+                    <div>
+                        <p>
+                            <input type="text" id="logic2Threshold" value="1" />個<br />
+                            <!-- エラーメッセージ表示箇所 -->
+                            <span id="logic2ThresholdErrorMessage"></span>
+                        </p>
+                    </div>
+                </li>
+            </ol>
+            <div align="center">
+                <input type="button" id="execSegmentation" value="実行" />
+            </div>
+        </form>
+    </div>
+</body>
+</html>
