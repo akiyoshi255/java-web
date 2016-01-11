@@ -434,7 +434,7 @@
     <!-- ローカルマシンのTomcat上に配備したWebアプリケーションの静的コンテンツを更新する -->
     <target name="sync-webapp-contents">
         <sync
-            todir       = "${tomcat.webapp.dir}WEB-INF/lib"
+            todir       = "${tomcat.webapp.dir}"
             overwrite   = "false"
             failonerror = "true"
             verbose     = "${verbose}">
