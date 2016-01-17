@@ -1,0 +1,567 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>jQueryサンプル</title>
+<script type="text/javascript" src="js/jquery/jquery-1.12.0.js"></script>
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript">
+    jQuery(function($) {
+        var tbody = $("table > tbody");
+
+        // サーバから取得したカテゴリ対応表のキャッシュ
+        var largeCategories = [];
+        var largeToMiddleCategoryMap = {};
+        var largeAndMiddleToSmallCategoryMap = {};
+
+        // 大カテゴリ一覧を取得する。
+        $.ajax({
+            url : "ajaxSample",
+            type : "GET",
+            data : {},
+            dataType : "json",
+        }).done(function(data, status, xhr) {
+            // 通信成功時の処理
+            console.log("done");
+            console.log("status=" + status);
+
+            var result = data.result;
+            for (var i = 0; i < result.length; i++) {
+                largeCategories[i] = result[i];
+                largeAndMiddleToSmallCategoryMap[result[i].categoryId] = {};
+            }
+
+            tbody.find("tr > td.smallItemData1 > select").html(getCategoryOptions(largeCategories));
+        }).fail(function(xhr, status, error) {
+            // 通信失敗時の処理
+            console.log("fail");
+            console.log("error=" + error);
+            console.log("status=" + status);
+        }).always(function(arg1, status, arg2) {
+            // 通信完了時の処理
+            console.log("always");
+        });
+
+        // 大項目が選択された場合のイベントハンドラ
+        var onChangeSmallItemData1 = function() {
+            console.log("smallItemData1");
+
+            var largeCategoryId = $(this).val();
+            var thisRow = $(this).parent().parent();
+            thisRow.find("td.smallItemData2 > select").val("");
+            thisRow.find("td.smallItemData3 > select").val("");
+            if (!largeCategoryId) {
+                return;
+            }
+
+            // 中カテゴリ一覧をキャッシュから取得する。
+            var middleCategories = largeToMiddleCategoryMap[largeCategoryId];
+            if (middleCategories) {
+                thisRow.find("td.smallItemData2 > select").html(getCategoryOptions(middleCategories));
+                return;
+            }
+
+            // 中カテゴリ一覧をサーバから取得する。
+            $.ajax({
+                url : "ajaxSample",
+                type : "GET",
+                data : {
+                    "largeCategoryId" : largeCategoryId
+                },
+                dataType : "json",
+            }).done(function(data, status, xhr) {
+                // 通信成功時の処理
+                console.log("done");
+                console.log("status=" + status);
+
+                var middleCategories = data.result;
+                largeToMiddleCategoryMap[largeCategoryId] = middleCategories;
+                thisRow.find("td.smallItemData2 > select").html(getCategoryOptions(middleCategories));
+            }).fail(function(xhr, status, error) {
+                // 通信失敗時の処理
+                console.log("fail");
+                console.log("error=" + error);
+                console.log("status=" + status);
+                middleCategories;
+            }).always(function(arg1, status, arg2) {
+                // 通信完了時の処理
+                console.log("always");
+            });
+        };
+
+        // 中項目が選択された場合のイベントハンドラ
+        var onChangeSmallItemData2 = function() {
+            console.log("smallItemData2");
+
+            var middleCategoryId = $(this).val();
+            var thisRow = $(this).parent().parent();
+            thisRow.find("td.smallItemData3 > select").val("");
+            if (!middleCategoryId) {
+                return;
+            }
+
+            // 小カテゴリ一覧をキャッシュから取得する。
+            var largeCategoryId = thisRow.find("td.smallItemData1 > select").val();
+            var smallCategories = largeAndMiddleToSmallCategoryMap[largeCategoryId][middleCategoryId];
+            if (smallCategories) {
+                thisRow.find("td.smallItemData3> select").html(getCategoryOptions(smallCategories));
+                return;
+            }
+
+            // 小カテゴリ一覧をサーバから取得する。
+            $.ajax({
+                url : "ajaxSample",
+                type : "GET",
+                data : {
+                    "largeCategoryId" : largeCategoryId,
+                    "middleCategoryId" : middleCategoryId
+                },
+                dataType : "json",
+            }).done(function(data, status, xhr) {
+                // 通信成功時の処理
+                console.log("done");
+                console.log("status=" + status);
+
+                var smallCategories = data.result;
+                largeAndMiddleToSmallCategoryMap[largeCategoryId][middleCategoryId] = smallCategories;
+                thisRow.find("td.smallItemData3 > select").html(getCategoryOptions(smallCategories));
+            }).fail(function(xhr, status, error) {
+                // 通信失敗時の処理
+                console.log("fail");
+                console.log("error=" + error);
+                console.log("status=" + status);
+            }).always(function(arg1, status, arg2) {
+                // 通信完了時の処理
+                console.log("always");
+            });
+        };
+
+        // カテゴリ一覧からOptionタグを作成する。
+        var getCategoryOptions = function(categories) {
+            var options = '<option value=""></option>';
+            for (i in categories) {
+                options += '<option value="' + categories[i].categoryId + '">' + categories[i].categoryName + '</option>';
+            }
+            return options;
+        }
+
+        // 新しい行を作成する。
+        var createNewItemRow = function() {
+            var newRow = $("#templateRow").clone();
+            newRow.removeAttr("id");
+
+            // 大カテゴリ一覧を初期化する。
+            var smallItemData1Select = newRow.find("td.smallItemData1 > select");
+            smallItemData1Select.html(getCategoryOptions(largeCategories));
+
+            // ボタンに対するイベントハンドラを登録する。
+            newRow.find("td.smallItemData1 > select").on("change", onChangeSmallItemData1);
+            newRow.find("td.smallItemData2 > select").on("change", onChangeSmallItemData2);
+            newRow.find("td.smallItemAdd > input").on("click", onClickAddSmallItemButton);
+            newRow.find("td.smallItemDelete > input").on("click", onClickDeleteSmallItemButton);
+
+            return newRow;
+        }
+
+        // 新しい大項目行を作成する。
+        var createNewLargeItemRow = function() {
+            var newRow = createNewItemRow();
+
+            // 小項目数と小項目インデックスを初期化する。
+            newRow.data("smallItemNum", 1);
+            newRow.find(".smallItemIndex").text("1");
+
+            // ボタンに対するイベントハンドラを登録する。
+            newRow.find("td.largeItemAdd > input").on("click", onClickAddLargeItemButton);
+            newRow.find("td.largeItemDelete > input").on("click", onClickDeleteLargeItemButton);
+
+            // 小項目削除ボタンを無効化
+            newRow.find("td.smallItemDelete > input").prop("disabled", true);
+
+            newRow.css("display", "table-row");
+            return newRow;
+        }
+
+        // 新しい小項目行を作成する。
+        var createNewSmallItemRow = function() {
+            var newRow = createNewItemRow();
+
+            // 小項目行に不要な列を削除する。
+            newRow.children(".largeItemIndex").remove();
+            newRow.children(".largeItemData1").remove();
+            newRow.children(".largeItemData2").remove();
+            newRow.children(".largeItemAdd").remove();
+            newRow.children(".largeItemDelete").remove();
+
+            newRow.css("display", "table-row");
+            return newRow;
+        }
+
+        // 最初の大項目を作成する。
+        var createFirstLargeItemRow = function() {
+            var firstRow = createNewLargeItemRow();
+            firstRow.find(".largeItemIndex").text("1");
+            firstRow.find("td.largeItemDelete > input").prop("disabled", true);
+            return firstRow;
+        }
+
+        // 大項目追加ボタンが押された場合の処理
+        var onClickAddLargeItemButton = function() {
+            console.log("onClickAddLargeItemButton");
+
+            var thisRow = $(this).parent().parent();
+            thisRow.find("td.largeItemDelete > input").prop("disabled", false);
+
+            // 次の大項目行に新しい行を追加する。
+            var nextRow = thisRow;
+            thisRow.nextAll().each(function(index) {
+                if ($(this).children("td").is(".largeItemIndex")) {
+                    return false;
+                }
+                nextRow = $(this);
+            });
+            nextRow.after(createNewLargeItemRow());
+
+            // 追加ボタンが押された行以降の大項目行の大項目インデックスを+1する。
+            var nextLargeItemIndex = Number(thisRow.find(".largeItemIndex").text()) + 1;
+            thisRow.nextAll().each(function(index) {
+                if ($(this).children("td").is(".largeItemIndex")) {
+                    $(this).find(".largeItemIndex").text(nextLargeItemIndex);
+                    nextLargeItemIndex++;
+                }
+            });
+        };
+
+        // 大項目削除ボタンが押された場合の処理
+        var onClickDeleteLargeItemButton = function() {
+            console.log("onClickDeleteLargeItemButton");
+
+            var thisRow = $(this).parent().parent();
+
+            // 削除ボタンが押された行以降の大項目行の大項目インデックスを-1する。
+            var nextLargeItemIndex = Number(thisRow.find(".largeItemIndex").text());
+            thisRow.nextAll().each(function(index) {
+                if ($(this).children("td").is(".largeItemIndex")) {
+                    $(this).find(".largeItemIndex").text(nextLargeItemIndex);
+                    nextLargeItemIndex++;
+                }
+            });
+
+            // 次の大項目行までの小項目行を削除する。
+            thisRow.nextAll().each(function(index) {
+                if ($(this).children("td").is(".largeItemIndex")) {
+                    return false;
+                }
+                $(this).remove();
+            });
+            thisRow.remove();
+
+            // 最後の1行の場合は、削除ボタンを非活性化する。
+            var rowsLength = tbody.find("td.largeItemIndex").length;
+            if (rowsLength <= 2) {
+                var firstRow = tbody.children("tr#templateRow").next();
+                firstRow.find("td.largeItemDelete > input").prop("disabled", true);
+            }
+        };
+
+        // 全行削除ボタンが押された場合の処理
+        var onClickDeleteAllLargeItemsButton = function() {
+            console.log("onClickDeleteAllLargeItemsButton");
+
+            var thisRow = $(this).parent().parent();
+
+            var children = tbody.children();
+            for (var i = 2; i < children.length; i++) {
+                children[i].remove();
+            }
+
+            var firstRow = createFirstLargeItemRow();
+            firstRow.appendTo(tbody);
+        };
+        $("#deleteAllLargeItemsButton").on("click", onClickDeleteAllLargeItemsButton);
+
+        // 小項目追加ボタンが押された場合の処理
+        var onClickAddSmallItemButton = function() {
+            console.log("onClickAddSmallItemButton");
+
+            var newRow = createNewSmallItemRow();
+            var thisRow = $(this).parent().parent();
+            var largeItemRow = thisRow;
+            while (!largeItemRow.children("td").is(".largeItemIndex")) {
+                largeItemRow = largeItemRow.prev();
+            }
+
+            var largeItemIndexCell = largeItemRow.children("td.largeItemIndex");
+            var currentRowSpan = largeItemIndexCell.attr("rowspan");
+            currentRowSpan++;
+            largeItemIndexCell.attr("rowspan", currentRowSpan);
+            var largeItemData1Cell = largeItemRow.children("td.largeItemData1");
+            largeItemData1Cell.attr("rowspan", currentRowSpan);
+            var largeItemData2Cell = largeItemRow.children("td.largeItemData2");
+            largeItemData2Cell.attr("rowspan", currentRowSpan);
+            var largeItemAddCell = largeItemRow.children("td.largeItemAdd");
+            largeItemAddCell.attr("rowspan", currentRowSpan);
+            var largeItemDeleteCell = largeItemRow.children("td.largeItemDelete");
+            largeItemDeleteCell.attr("rowspan", currentRowSpan);
+
+            var smallItemNum = largeItemRow.data("smallItemNum") + 1;
+            largeItemRow.data("smallItemNum", smallItemNum);
+
+            largeItemRow.find("td.smallItemDelete > input").prop("disabled", false);
+
+            thisRow.after(newRow);
+
+            var nextSmallItemIndex = Number(thisRow.find(".smallItemIndex").text()) + 1;
+            thisRow.nextAll().each(function(index) {
+                if ($(this).children("td").is(".largeItemIndex")) {
+                    if (largeItemRow != $(this)) {
+                        return false;
+                    }
+                }
+
+                $(this).find(".smallItemIndex").text(nextSmallItemIndex);
+                nextSmallItemIndex++;
+            });
+        };
+
+        // 小項目削除ボタンが押された場合の処理
+        var onClickDeleteSmallItemButton = function() {
+            console.log("onClickDeleteSmallItemButton");
+
+            var newRow = createNewSmallItemRow();
+            var thisRow = $(this).parent().parent();
+            var largeItemRow = thisRow;
+            while (!largeItemRow.children("td").is(".largeItemIndex")) {
+                largeItemRow = largeItemRow.prev();
+            }
+
+            var largeItemIndexCell = largeItemRow.children("td.largeItemIndex");
+            var currentRowSpan = largeItemIndexCell.attr("rowspan");
+            currentRowSpan--;
+            largeItemIndexCell.attr("rowspan", currentRowSpan);
+            var largeItemData1Cell = largeItemRow.children("td.largeItemData1");
+            largeItemData1Cell.attr("rowspan", currentRowSpan);
+            var largeItemData2Cell = largeItemRow.children("td.largeItemData2");
+            largeItemData2Cell.attr("rowspan", currentRowSpan);
+            var largeItemAddCell = largeItemRow.children("td.largeItemAdd");
+            largeItemAddCell.attr("rowspan", currentRowSpan);
+            var largeItemDeleteCell = largeItemRow.children("td.largeItemDelete");
+            largeItemDeleteCell.attr("rowspan", currentRowSpan);
+
+            var smallItemNum = largeItemRow.data("smallItemNum") - 1;
+            if (largeItemRow == thisRow) {
+                var nextLargeItemRow = thisRow.next();
+
+                nextLargeItemRow.prepend(largeItemData1Cell);
+                nextLargeItemRow.prepend(largeItemIndexCell);
+                nextLargeItemRow.append(largeItemData2Cell);
+                nextLargeItemRow.append(largeItemAddCell);
+                nextLargeItemRow.append(largeItemDeleteCell);
+
+                nextLargeItemRow.find(".smallItemIndex").text("1");
+                var nextSmallItemIndex = 2;
+                nextLargeItemRow.nextAll().each(function(index) {
+                    if ($(this).children("td").is(".largeItemIndex")) {
+                        return false;
+                    }
+                    $(this).find(".smallItemIndex").text(nextSmallItemIndex);
+                    nextSmallItemIndex++;
+                });
+
+                largeItemRow = nextLargeItemRow;
+            } else {
+                var nextSmallItemIndex = Number(thisRow.find(".smallItemIndex").text());
+                thisRow.nextAll().each(function(index) {
+                    if ($(this).children("td").is(".largeItemIndex")) {
+                        return false;
+                    }
+                    $(this).find(".smallItemIndex").text(nextSmallItemIndex);
+                    nextSmallItemIndex++;
+                });
+            }
+
+            largeItemRow.data("smallItemNum", smallItemNum);
+            if (smallItemNum <= 1) {
+                largeItemRow.find("td.smallItemDelete > input").prop("disabled", true);
+            }
+
+            thisRow.remove();
+        };
+
+        var addSmallItemData = function(smallItemRow, smallItemDatas) {
+            var smallItemData = {};
+            var isEmptySmallItem = true;
+
+            var largeCategorySelect = smallItemRow.find("td.smallItemData1 > select");
+            var largeCategoryId = largeCategorySelect.val();
+            if (largeCategoryId) {
+                var largeCategoryName = largeCategorySelect.find("option:selected").text();
+                smallItemData.largeCategory = {
+                    "categoryId" : largeCategoryId,
+                    "categoryName" : largeCategoryName
+                };
+                isEmptySmallItem = false;
+            }
+
+            var middleCategorySelect = smallItemRow.find("td.smallItemData2 > select");
+            var middleCategoryId = middleCategorySelect.val();
+            if (middleCategoryId) {
+                var middleCategoryName = middleCategorySelect.find("option:selected").text();
+                smallItemData.middleCategory = {
+                    "categoryId" : middleCategoryId,
+                    "categoryName" : middleCategoryName
+                };
+                isEmptySmallItem = false;
+            }
+
+            var smallCategorySelect = smallItemRow.find("td.smallItemData3 > select");
+            var smallCategoryId = smallCategorySelect.val();
+            if (smallCategoryId) {
+                var smallCategoryName = smallCategorySelect.find("option:selected").text();
+                smallItemData.smallCategory = {
+                    "categoryId" : smallCategoryId,
+                    "categoryName" : smallCategoryName
+                };
+                isEmptySmallItem = false;
+            }
+
+            var smallItemAttr1 = smallItemRow.find("td.smallItemData4 > input").val();
+            if (smallItemAttr1) {
+                smallItemData.attr1 = smallItemAttr1;
+                isEmptySmallItem = false;
+            }
+
+            var smallItemAttr2 = smallItemRow.find("td.smallItemData5 > input").val();
+            if (smallItemAttr2) {
+                smallItemData.attr2 = smallItemAttr2;
+                isEmptySmallItem = false;
+            }
+
+            var smallItemAttr3 = smallItemRow.find("td.smallItemData6 > input").val();
+            if (smallItemAttr3) {
+                smallItemData.attr3 = smallItemAttr3;
+                isEmptySmallItem = false;
+            }
+
+            if (!isEmptySmallItem) {
+                smallItemDatas.push(smallItemData);
+            }
+        }
+
+        // テーブルタグから、全ての行をスキャンし、データオブジェクトを構築する。
+        var getAllItemsData = function() {
+            console.log("getAllItemsData");
+            var allItemData = [];
+            tbody.find("tr:has(td.largeItemIndex)").not("#headerRow").not("#templateRow").each(function(index) {
+                var thisRow = $(this);
+
+                var keyword = thisRow.find("td.largeItemData1 > input").val();
+                if (!keyword) {
+                    return;
+                }
+                var largeItemData = {};
+                largeItemData.keyword = keyword;
+                var excludeKeywordsVal = thisRow.find("td.largeItemData2 > textarea").val();
+                if (excludeKeywordsVal) {
+                    var excludeKeywords = excludeKeywordsVal.split(",");
+                    largeItemData.excludeKeywords = excludeKeywords;
+                }
+                largeItemData.smallItemDatas = [];
+
+                // 小項目を追加する。
+                addSmallItemData(thisRow, largeItemData.smallItemDatas);
+                thisRow.nextAll().each(function(index) {
+                    // 次の大項目行まで来たらループを抜ける。
+                    if ($(this).children("td").is(".largeItemIndex")) {
+                        return false;
+                    }
+                    addSmallItemData($(this), largeItemData.smallItemDatas);
+                });
+
+                allItemData.push(largeItemData);
+            });
+            return allItemData;
+        }
+        $("#updateAllItemsButton").on("click", function() {
+            console.log("updateAllItemsButton");
+            var allItemsData = getAllItemsData();
+            console.log(window.JSON.stringify(allItemsData));
+        });
+
+        // 最初の行を追加する。
+        var firstRow = createFirstLargeItemRow();
+        firstRow.appendTo(tbody);
+    });
+</script>
+</head>
+<body>
+    <table border="1">
+        <tr id="headerRow">
+            <th>#</th>
+            <th>キーワード</th>
+            <th>#</th>
+            <th>大カテゴリ</th>
+            <th>中カテゴリ</th>
+            <th>小カテゴリ</th>
+            <th>属性1</th>
+            <th>属性2</th>
+            <th>属性3</th>
+            <th colspan="2">操作</th>
+            <th>除外キーワード</th>
+            <th colspan="2">操作</th>
+        </tr>
+        <tr id="templateRow" style="display: none">
+            <td class="largeItemIndex" rowspan="1" valign="top"></td>
+            <td class="largeItemData1" rowspan="1" valign="top">
+                <input type="text" size="48" />
+            </td>
+            <td class="smallItemIndex" valign="top"></td>
+            <td class="smallItemData1" valign="top">
+                <select>
+                </select>
+            </td>
+            <td class="smallItemData2" valign="top">
+                <select>
+                </select>
+            </td>
+            <td class="smallItemData3" valign="top">
+                <select>
+                </select>
+            </td>
+            <td class="smallItemData4" valign="top">
+                <input type="text" size="4" />
+            </td>
+            <td class="smallItemData5" valign="top">
+                <input type="text" size="4" />
+            </td>
+            <td class="smallItemData6" valign="top">
+                <input type="text" size="4" />
+            </td>
+            <td class="smallItemAdd" valign="top">
+                <input type="button" value="追加" class="addSmallItemButton" />
+            </td>
+            <td class="smallItemDelete" valign="top">
+                <input type="button" value="削除" class="deleteSmallItemButton" />
+            </td>
+            <td class="largeItemData2" rowspan="1" valign="top">
+                <textarea></textarea>
+            </td>
+            <td class="largeItemAdd" rowspan="1" valign="top">
+                <input type="button" value="追加" class="addLargeItemButton" />
+            </td>
+            <td class="largeItemDelete" rowspan="1" valign="top">
+                <input type="button" value="削除" class="deleteLargeItemButton" />
+            </td>
+        </tr>
+    </table>
+    <div>
+        <form>
+            <input type="button" value="全行削除" id="deleteAllLargeItemsButton" />
+        </form>
+
+        <form>
+            <input type="button" value="更新" id="updateAllItemsButton" />
+        </form>
+    </div>
+</body>
+</html>
