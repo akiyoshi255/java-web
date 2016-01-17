@@ -139,14 +139,14 @@
         // カテゴリ一覧からOptionタグを作成する。
         var getCategoryOptions = function(categories) {
             var options = '<option value=""></option>';
-            for (i in categories) {
+            for ( var i in categories) {
                 options += '<option value="' + categories[i].categoryId + '">' + categories[i].categoryName + '</option>';
             }
             return options;
         }
 
         // 新しい行を作成する。
-        var createNewItemRow = function() {
+        var createNewItemRow = function(largeItemData) {
             var newRow = $("#templateRow").clone();
             newRow.removeAttr("id");
 
@@ -164,7 +164,7 @@
         }
 
         // 新しい大項目行を作成する。
-        var createNewLargeItemRow = function() {
+        var createNewLargeItemRow = function(largeItemData) {
             var newRow = createNewItemRow();
 
             // 小項目数と小項目インデックスを初期化する。
@@ -178,12 +178,38 @@
             // 小項目削除ボタンを無効化
             newRow.find("td.smallItemDelete > input").prop("disabled", true);
 
+            // 初期値が指定されていた場合はセットする。
+            if (largeItemData != null) {
+                newRow.find("td.largeItemData1 > input").val(largeItemData.keyword);
+
+                var excludeKeywords = largeItemData.excludeKeywords;
+                if (excludeKeywords) {
+                    var excludeKeywordsLength = excludeKeywords.length;
+                    if (excludeKeywordsLength > 0) {
+                        var excludeKeywordsVal = excludeKeywords[0];
+                        for (var i = 1; i < excludeKeywordsLength; i++) {
+                            excludeKeywordsVal += "," + excludeKeywords[i];
+                        }
+                        newRow.find("td.largeItemData2 > textarea").val(excludeKeywordsVal);
+                    }
+                }
+
+                var smallItemDatas = largeItemData.smallItemDatas;
+                if (smallItemDatas) {
+                    var smallItemDatasLength = smallItemDatas.length;
+                    if (smallItemDatasLength > 0) {
+                        var smallItemData = smallItemDatas[0];
+                        setSmallItemData(smallItemData, newRow);
+                    }
+                }
+            }
+
             newRow.css("display", "table-row");
             return newRow;
         }
 
         // 新しい小項目行を作成する。
-        var createNewSmallItemRow = function() {
+        var createNewSmallItemRow = function(smallItemData) {
             var newRow = createNewItemRow();
 
             // 小項目行に不要な列を削除する。
@@ -193,8 +219,46 @@
             newRow.children(".largeItemAdd").remove();
             newRow.children(".largeItemDelete").remove();
 
+            // 初期値が指定されていた場合はセットする。
+            if (smallItemData) {
+                setSmallItemData(smallItemData, newRow);
+            }
+
             newRow.css("display", "table-row");
             return newRow;
+        }
+
+        var setSmallItemData = function(smallItemData, smallItemRow) {
+            var largeCategory = smallItemData.largeCategory;
+            if (largeCategory) {
+                var largeCategorySelect = smallItemRow.find("td.smallItemData1 > select");
+                largeCategorySelect.html(getCategoryOptions([ largeCategory ]));
+                largeCategorySelect.val(largeCategory.categoryId);
+            }
+            var middleCategory = smallItemData.middleCategory;
+            if (middleCategory) {
+                var middleCategorySelect = smallItemRow.find("td.smallItemData2 > select");
+                middleCategorySelect.html(getCategoryOptions([ middleCategory ]));
+                middleCategorySelect.val(middleCategory.categoryId);
+            }
+            var smallCategory = smallItemData.smallCategory;
+            if (middleCategory) {
+                var smallCategorySelect = smallItemRow.find("td.smallItemData3 > select");
+                smallCategorySelect.html(getCategoryOptions([ smallCategory ]));
+                smallCategorySelect.val(smallCategory.categoryId);
+            }
+            var attr1 = smallItemData.attr1
+            if (attr1) {
+                smallItemRow.find("td.smallItemData4 > input").val(attr1);
+            }
+            var attr2 = smallItemData.attr2
+            if (attr2) {
+                smallItemRow.find("td.smallItemData5 > input").val(attr2);
+            }
+            var attr3 = smallItemData.attr3
+            if (attr3) {
+                smallItemRow.find("td.smallItemData6 > input").val(attr3);
+            }
         }
 
         // 最初の大項目を作成する。
@@ -486,11 +550,48 @@
             console.log("updateAllItemsButton");
             var allItemsData = getAllItemsData();
             console.log(window.JSON.stringify(allItemsData));
+
+            var thisRow = $(this).parent().parent();
+            var children = tbody.children();
+            for (var i = 2; i < children.length; i++) {
+                children[i].remove();
+            }
+
+            if (allItemsData.length > 0) {
+                for (var i = 0; i < allItemsData.length; i++) {
+                    var newLargeItemRow = createNewLargeItemRow(allItemsData[i]);
+                    newLargeItemRow.children("td.largeItemIndex").text(i + 1);
+
+                    var smallItemDatasLength = 1;
+                    var smallItemDatas = allItemsData[i].smallItemDatas;
+                    if (smallItemDatas) {
+                        smallItemDatasLength = smallItemDatas.length;
+                    }
+                    if (smallItemDatasLength > 1) {
+                        newLargeItemRow.children("td.largeItemIndex").attr("rowspan", smallItemDatasLength);
+                        newLargeItemRow.children("td.largeItemData1").attr("rowspan", smallItemDatasLength);
+                        newLargeItemRow.children("td.largeItemData2").attr("rowspan", smallItemDatasLength);
+                        newLargeItemRow.children("td.largeItemAdd").attr("rowspan", smallItemDatasLength);
+                        newLargeItemRow.children("td.largeItemDelete").attr("rowspan", smallItemDatasLength);
+                        newLargeItemRow.data("smallItemNum", smallItemDatasLength);
+                        newLargeItemRow.find("td.smallItemDelete > input").prop("disabled", false);
+                    }
+
+                    tbody.append(newLargeItemRow);
+                    for (var j = 1; j < smallItemDatasLength; j++) {
+                        var newSmallItemRow = createNewSmallItemRow(smallItemDatas[j]);
+                        newSmallItemRow.children("td.smallItemIndex").text(j + 1);
+
+                        tbody.append(newSmallItemRow);
+                    }
+                }
+            } else {
+                tbody.append(createFirstLargeItemRow());
+            }
         });
 
         // 最初の行を追加する。
-        var firstRow = createFirstLargeItemRow();
-        firstRow.appendTo(tbody);
+        tbody.append(createFirstLargeItemRow());
     });
 </script>
 </head>
