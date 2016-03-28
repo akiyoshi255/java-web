@@ -82,7 +82,6 @@
                 console.log("fail");
                 console.log("error=" + error);
                 console.log("status=" + status);
-                middleCategories;
             }).always(function(arg1, status, arg2) {
                 // 通信完了時の処理
                 console.log("always");
@@ -242,7 +241,7 @@
                 middleCategorySelect.val(middleCategory.categoryId);
             }
             var smallCategory = smallItemData.smallCategory;
-            if (middleCategory) {
+            if (smallCategory) {
                 var smallCategorySelect = smallItemRow.find("td.smallItemData3 > select");
                 smallCategorySelect.html(getCategoryOptions([ smallCategory ]));
                 smallCategorySelect.val(smallCategory.categoryId);
@@ -328,59 +327,33 @@
             }
         };
 
-        // 全行削除ボタンが押された場合の処理
-        var onClickDeleteAllLargeItemsButton = function() {
-            console.log("onClickDeleteAllLargeItemsButton");
 
-            var thisRow = $(this).parent().parent();
-
-            var children = tbody.children();
-            for (var i = 2; i < children.length; i++) {
-                children[i].remove();
-            }
-
-            var firstRow = createFirstLargeItemRow();
-            firstRow.appendTo(tbody);
-        };
-        $("#deleteAllLargeItemsButton").on("click", onClickDeleteAllLargeItemsButton);
 
         // 小項目追加ボタンが押された場合の処理
         var onClickAddSmallItemButton = function() {
             console.log("onClickAddSmallItemButton");
 
-            var newRow = createNewSmallItemRow();
             var thisRow = $(this).parent().parent();
             var largeItemRow = thisRow;
             while (!largeItemRow.children("td").is(".largeItemIndex")) {
                 largeItemRow = largeItemRow.prev();
             }
-
-            var largeItemIndexCell = largeItemRow.children("td.largeItemIndex");
-            var currentRowSpan = largeItemIndexCell.attr("rowspan");
-            currentRowSpan++;
-            largeItemIndexCell.attr("rowspan", currentRowSpan);
-            var largeItemData1Cell = largeItemRow.children("td.largeItemData1");
-            largeItemData1Cell.attr("rowspan", currentRowSpan);
-            var largeItemData2Cell = largeItemRow.children("td.largeItemData2");
-            largeItemData2Cell.attr("rowspan", currentRowSpan);
-            var largeItemAddCell = largeItemRow.children("td.largeItemAdd");
-            largeItemAddCell.attr("rowspan", currentRowSpan);
-            var largeItemDeleteCell = largeItemRow.children("td.largeItemDelete");
-            largeItemDeleteCell.attr("rowspan", currentRowSpan);
+            largeItemRow.find("td.smallItemDelete > input").prop("disabled", false);
 
             var smallItemNum = largeItemRow.data("smallItemNum") + 1;
             largeItemRow.data("smallItemNum", smallItemNum);
+            largeItemRow.children("td.largeItemIndex").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemData1").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemData2").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemAdd").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemDelete").attr("rowspan", smallItemNum);
 
-            largeItemRow.find("td.smallItemDelete > input").prop("disabled", false);
-
-            thisRow.after(newRow);
+            thisRow.after(createNewSmallItemRow());
 
             var nextSmallItemIndex = Number(thisRow.find(".smallItemIndex").text()) + 1;
             thisRow.nextAll().each(function(index) {
                 if ($(this).children("td").is(".largeItemIndex")) {
-                    if (largeItemRow != $(this)) {
-                        return false;
-                    }
+                    return false;
                 }
 
                 $(this).find(".smallItemIndex").text(nextSmallItemIndex);
@@ -399,20 +372,13 @@
                 largeItemRow = largeItemRow.prev();
             }
 
-            var largeItemIndexCell = largeItemRow.children("td.largeItemIndex");
-            var currentRowSpan = largeItemIndexCell.attr("rowspan");
-            currentRowSpan--;
-            largeItemIndexCell.attr("rowspan", currentRowSpan);
-            var largeItemData1Cell = largeItemRow.children("td.largeItemData1");
-            largeItemData1Cell.attr("rowspan", currentRowSpan);
-            var largeItemData2Cell = largeItemRow.children("td.largeItemData2");
-            largeItemData2Cell.attr("rowspan", currentRowSpan);
-            var largeItemAddCell = largeItemRow.children("td.largeItemAdd");
-            largeItemAddCell.attr("rowspan", currentRowSpan);
-            var largeItemDeleteCell = largeItemRow.children("td.largeItemDelete");
-            largeItemDeleteCell.attr("rowspan", currentRowSpan);
-
             var smallItemNum = largeItemRow.data("smallItemNum") - 1;
+            largeItemRow.children("td.largeItemIndex").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemData1").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemData2").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemAdd").attr("rowspan", smallItemNum);
+            largeItemRow.children("td.largeItemDelete").attr("rowspan", smallItemNum);
+
             if (largeItemRow == thisRow) {
                 var nextLargeItemRow = thisRow.next();
 
@@ -589,7 +555,21 @@
                 tbody.append(createFirstLargeItemRow());
             }
         });
+        // 全行削除ボタンが押された場合の処理
+        var onClickDeleteAllLargeItemsButton = function() {
+            console.log("onClickDeleteAllLargeItemsButton");
 
+            var thisRow = $(this).parent().parent();
+
+            var children = tbody.children();
+            for (var i = 2; i < children.length; i++) {
+                children[i].remove();
+            }
+
+            var firstRow = createFirstLargeItemRow();
+            firstRow.appendTo(tbody);
+        };
+        $("#deleteAllLargeItemsButton").on("click", onClickDeleteAllLargeItemsButton);
         // 最初の行を追加する。
         tbody.append(createFirstLargeItemRow());
     });

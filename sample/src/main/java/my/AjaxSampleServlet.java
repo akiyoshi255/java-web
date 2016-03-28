@@ -2,7 +2,10 @@ package my;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -19,12 +22,79 @@ public class AjaxSampleServlet extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final Log LOG = LogFactory.getLog(CalcResource.class);
+	private static final Log LOG = LogFactory.getLog(AjaxSampleServlet.class);
+
+	private Category[] largeCategories = null;
+
+	private Map<String, Category[]> largeToMiddleCategoryMap = new HashMap<String, Category[]>();
+
+	private Map<String, Category[]> middleToSmallCategoryMap = new HashMap<String, Category[]>();
 
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		// TODO Auto-generated method stub
-		doPost(req, resp);
+	public void init(ServletConfig config) throws ServletException {
+		super.init(config);
+
+		Category largeCategory1 = new Category("largeId1", "largeData1");
+		Category largeCategory2 = new Category("largeId2", "largeData2");
+		Category largeCategory3 = new Category("largeId3", "largeData3");
+		largeCategories = new Category[] { largeCategory1, largeCategory2, largeCategory3 };
+
+		Category middleCategory1 = new Category("middleId1", "middleData1");
+		Category middleCategory2 = new Category("middleId2", "middleData2");
+		Category middleCategory3 = new Category("middleId3", "middleData3");
+		largeToMiddleCategoryMap.put("largeId1", new Category[] { middleCategory1, middleCategory2 });
+		largeToMiddleCategoryMap.put("largeId2", new Category[] { middleCategory1, middleCategory3 });
+		largeToMiddleCategoryMap.put("largeId3", new Category[] { middleCategory2, middleCategory3 });
+
+		Category smallCategory1 = new Category("smallId1", "smallData1");
+		Category smallCategory2 = new Category("smallId2", "smallData2");
+		Category smallCategory3 = new Category("smallId3", "smallData3");
+		middleToSmallCategoryMap.put("middleId1", new Category[] { smallCategory1, smallCategory2 });
+		middleToSmallCategoryMap.put("middleId2", new Category[] { smallCategory1, smallCategory3 });
+		middleToSmallCategoryMap.put("middleId3", new Category[] { smallCategory2, smallCategory3 });
+	}
+
+	@Override
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		LOG.info("\"parameters\": {");
+		for (String paramName : request.getParameterMap().keySet()) {
+			String paramValue = request.getParameter(paramName);
+			LOG.info("    \"" + paramName + "\": " + paramValue);
+		}
+		LOG.info("}");
+
+		String largeCategoryId = request.getParameter("largeCategoryId");
+		String middleCategoryId = request.getParameter("middleCategoryId");
+
+		CategorySearchResult searchResult = new CategorySearchResult();
+		searchResult.setLargeCategoryId(largeCategoryId);
+		searchResult.setMiddleCategoryId(middleCategoryId);
+		if (largeCategoryId == null) {
+			if (middleCategoryId == null) {
+				// 大カテゴリ
+				searchResult.setResult(largeCategories);
+			} else {
+				// エラー
+				response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			}
+		} else {
+			if (middleCategoryId == null) {
+				// 中カテゴリ
+				searchResult.setResult(largeToMiddleCategoryMap.get(largeCategoryId));
+			} else {
+				// 小カテゴリ
+				searchResult.setResult(middleToSmallCategoryMap.get(middleCategoryId));
+			}
+		}
+
+		String responseJson = JSON.escapeScript(searchResult);
+		LOG.info(responseJson);
+		byte[] responseData = responseJson.getBytes();
+
+		response.setStatus(HttpServletResponse.SC_OK);
+		response.setContentType("application/json");
+		response.setContentLength(responseData.length);
+		response.getOutputStream().write(responseData);
 	}
 
 	@Override

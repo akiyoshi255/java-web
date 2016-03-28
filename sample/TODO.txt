@@ -1,0 +1,13 @@
+tomcat リロード(ライブラリ抜き)
+tomcat リロード(ライブラリ有り)
+ant プロジェクト整理
+  ・外部プロパティ化
+ant プロジェクト
+  ・junit
+  ・junitレポート
+tomcat 起動、停止、デプロイ、アンデプロイ タスクの組み込み
+ant プロジェクト
+  ・chekcstyle
+  ・findbugs
+jenkins
+githubへ登録

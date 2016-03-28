@@ -26,7 +26,7 @@
              classpath = "${findbugs.home}/lib/findbugs-ant.jar"/>
 
 	<!-- プロジェクトに必要なディレクトリを作成する。 -->
-    <target name="make-project">
+    <target name="make-project" description="プロジェクトに必要なディレクトリを作成する。">
         <!-- Javaプログラム開発用ディレクトリ -->
         <mkdir dir="${src.main.java.dir}"/>
     	<mkdir dir="${src.test.java.dir}"/>
@@ -96,7 +96,7 @@
     </path>
 
     <!-- メインプログラムのコンパイル -->
-    <target name="compile-main">
+    <target name="compile-main" description="メインプログラムのコンパイル">
         <mkdir dir="${target.main.classes.dir}"/>
         <copy todir="${target.main.classes.dir}">
             <fileset dir="${src.main.java.dir}">
